@@ -1,4 +1,4 @@
-# intro to psql
+# Intro to PSQL
 
 This is an intro to psql class, and the file intro-psql.sql is a collection of query exercises for the psql dialect database.
 
