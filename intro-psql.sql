@@ -673,30 +673,33 @@ FROM users
 WHERE created_at BETWEEN '2020-09-21' AND '2020-12-20';
 
 --! GROUP BY
-
 -------------------------------------------------------------------
 -- WARMUPS & REFERENCE
 -------------------------------------------------------------------
-
 -- 1. Grouping by one column: 
 --    SELECT ship_state, COUNT(*) 
 --    FROM orders
 --    GROUP BY ship_state;
-SELECT ship_state, COUNT(*) 
+SELECT ship_state,
+  COUNT(*)
 FROM orders
-GROUP BY ship_state;
-
+GROUP BY
+  ship_state;
 
 -- 2. Grouping by multiple columns:
 --    SELECT ship_state, ship_zipcode, COUNT(*)
 --    FROM orders
 --    GROUP BY ship_state, ship_zipcode
 --    ORDER BY ship_state;
-SELECT ship_state, ship_zipcode, COUNT(*)
+SELECT ship_state,
+  ship_zipcode,
+  COUNT(*)
 FROM orders
-GROUP BY ship_state, ship_zipcode
-ORDER BY ship_state;
-
+GROUP BY
+  ship_state,
+  ship_zipcode
+ORDER BY
+  ship_state;
 
 -- 3. Grouping by multiple columns, only using the first 5 digits in zipcode:
 --    LEFT() accepts 2 parameters: the string, how many characters you want
@@ -704,53 +707,122 @@ ORDER BY ship_state;
 --    FROM orders
 --    GROUP BY ship_state, LEFT(ship_zipcode,5)
 --    ORDER BY ship_state;
-
-SELECT ship_state, LEFT(ship_zipcode,5), COUNT(*)
+SELECT ship_state,
+  LEFT(ship_zipcode, 5),
+  COUNT(*)
 FROM orders
-GROUP BY ship_state, LEFT(ship_zipcode,5)
-ORDER BY ship_state;
-
-
+GROUP BY
+  ship_state,
+  LEFT(ship_zipcode, 5)
+ORDER BY
+  ship_state;
 
 --------------------------------------------------------
---! EXERCISES: Answer using the techniques from above.
+--! EXERCISES: Answer using the techniques FROM above.
 --------------------------------------------------------
-
 -- 1. When was the most recent order made in each state?
-
+SELECT ship_state,
+  MAX(created_at) AS most_recent_order
+FROM orders
+GROUP BY
+  ship_state
+ORDER BY
+  ship_state;
 
 -- 2. Use the line_items table to find the total number of each product_id sold.
---    Make sure you exclude returned and canceled from your results.
-
+--    Make sure you exclude returned and canceled FROM your results.
+SELECT product_id,
+  COALESCE(SUM(quantity), 0) AS total_sold,
+  MIN(price) AS min_price,
+  MAX(price) AS max_price,
+  COUNT(*) AS total_orders
+FROM line_items
+WHERE COALESCE(status, '') NOT IN ('returned', 'canceled')
+GROUP BY
+  product_id
+HAVING
+  COALESCE(SUM(quantity), 0) > 0;
 
 -- 3. Use the line_items table to see the total dollar amount of items in each status (returned, shipped, etc.)
-
+SELECT status,
+  SUM(price * quantity) AS total_amount
+FROM line_items
+GROUP BY
+  status;
 
 -- 4. In the products table, find how many products are under each set of tags.
-
+SELECT tags,
+  count(tags) as total_count
+FROM products p
+GROUP BY
+  tags
+ORDER BY
+  tags;
 
 -- 5. Modify the previous query to find how many products over $70 are under each set of tags.
-
+SELECT tags,
+  count(tags) as total_count
+FROM products
+WHERE price >= 70
+GROUP BY
+  tags
+ORDER BY
+  total_count DESC;
 
 -- 6. Use the orders table to find out how many orders each user made.
-
+SELECT user_id,
+  COUNT(*) AS total_orders
+FROM orders
+GROUP BY
+  user_id
+Order by
+  total_orders desc;
 
 -- 7. When was the first order made in each state, in each zipcode?
 --    Zipcodes do not repeat between states, but write your query to show both
 --    the zipcode and state because it's nice to see the state for context.
-
+SELECT
+  ship_zipcode,
+  ship_state,
+  min(created_at) first_order
+FROM
+  orders o
+GROUP BY
+  ship_zipcode,
+  ship_state
+ORDER BY
+  first_order;
 
 ----------------------------------------
--- EXTRA CREDIT: If you finish early.
+--! EXTRA CREDIT: If you finish early.
 ----------------------------------------
-
 -- REMINDER: Use DATE_PART() in PostgreSQL or DATEPART() in SQL Server
-
--- 1. Use DATE PART to extract which calendar month each user was created in.
-
+-- 1. Use DATE PART to EXTRACT which calendar month each user was created in.
+SELECT 
+  user_id,
+  DATE_PART('month', created_at) AS created_month,
+  TO_CHAR(created_at, 'Month') AS month_name
+FROM users;
 
 -- 2. Use DATE PART and a GROUP BY statement to count how many users were created in each calendar month.
-
+SELECT DATE_PART('month', created_at) AS created_month,
+  COUNT(*) AS total_users
+FROM users
+GROUP BY
+  created_month
+ORDER BY
+  created_month;
 
 -- 3. Use DATE PART to find the number of users created during each day of the week.
-
+SELECT 
+  CASE 
+    WHEN DATE_PART('dow', created_at) = 0 THEN 7 
+    ELSE DATE_PART('dow', created_at)             
+  END AS day_of_week,
+  TO_CHAR(created_at, 'Day') AS day_name,
+  COUNT(*) AS total_users
+FROM users
+GROUP BY
+  day_of_week, day_name
+ORDER BY
+  day_of_week;
