@@ -1,11 +1,6 @@
 --! QUERIES TO PSQL ONLY GET OPERATIONS No full CRUD (POSTGRESQL Explorer)
 --! Does not have full crud operations only GET! (READ)
 /***** PSQL QUERIES LESSONS *****/
--- Server connection to PSQL --
---HOST: 32.74.232.247
---Database: company_data
---Username: student
---Password: noble-student
 --! Lesson (DAY 1)
 --! 1. Write a SQL query to view the entire 'users' table.
 SELECT *
