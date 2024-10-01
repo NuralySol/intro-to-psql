@@ -1,0 +1,12 @@
+{
+  "name": "intro-to-psql-querying",
+  "version": "1.0.0",
+  "description": "A project with SQL formatting and querying",
+  "scripts": {
+    "dev": "node ./scripts/format-sql.js", 
+    "sql": "npm run dev"  
+  },
+  "devDependencies": {
+    "sql-formatter": "^15.4.2"  
+  }
+}

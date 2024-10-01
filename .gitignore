@@ -1,0 +1,11 @@
+#! git ignore files and directories to be ignored (sensetive files)
+
+.env
+.vscode
+node_modules
+logs/
+*.log
+*.pid
+*.pid.lock
+npm-debug.log*
+coverage/
