@@ -1,8 +1,7 @@
 --! QUERIES TO PSQL ONLY GET OPERATIONS No full CRUD (POSTGRESQL Explorer)
 --! Does not have full crud operations only GET! (READ)
-/* SELECT Statements */
--- Lesson 1 (Day 1)
-----------------------------------------------------------------------------------
+/***** PSQL QUERIES LESSONS *****/
+--! Lesson (DAY 1)
 --! 1. Write a SQL query to view the entire 'users' table.
 SELECT *
 FROM users;
@@ -69,8 +68,8 @@ ORDER BY
   user_id,
   ship_state;
 
+
 /* LIKE and Wildcards */
-----------------------------------------------------------------------------------
 --! 1. Find all the users with a gmail email address.
 SELECT *
 FROM users
@@ -167,7 +166,6 @@ ORDER BY
   total_value DESC;
 
 /* The Below is the class ON the joining the tables */
-----------------------------------------------------------------------------------
 --! 1. Select everything FROM the line_items table.
 -- In the results, notice it contains the price and quantity, but not who ordered it.
 SELECT *
@@ -203,7 +201,7 @@ FROM line_items li
   JOIN users u ON u.user_id = o.user_id
 WHERE li.price * li.quantity >= 700;
 
--- Lesson (Day 2)
+--! Lesson (DAY 2)
 --  Outer Join and NULL
 -------------------------------------------------------------------
 -- WARMUPS & REFERENCE
@@ -781,12 +779,10 @@ Order by
 -- 7. When was the first order made in each state, in each zipcode?
 --    Zipcodes do not repeat between states, but write your query to show both
 --    the zipcode and state because it's nice to see the state for context.
-SELECT
-  ship_zipcode,
+SELECT ship_zipcode,
   ship_state,
   min(created_at) first_order
-FROM
-  orders o
+FROM orders o
 GROUP BY
   ship_zipcode,
   ship_state
@@ -798,8 +794,7 @@ ORDER BY
 ----------------------------------------
 -- REMINDER: Use DATE_PART() in PostgreSQL or DATEPART() in SQL Server
 -- 1. Use DATE PART to EXTRACT which calendar month each user was created in.
-SELECT 
-  user_id,
+SELECT user_id,
   DATE_PART('month', created_at) AS created_month,
   TO_CHAR(created_at, 'Month') AS month_name
 FROM users;
@@ -814,15 +809,90 @@ ORDER BY
   created_month;
 
 -- 3. Use DATE PART to find the number of users created during each day of the week.
-SELECT 
-  CASE 
-    WHEN DATE_PART('dow', created_at) = 0 THEN 7 
-    ELSE DATE_PART('dow', created_at)             
+--! the below is better since PSQL counts FROM Sunday = 0, which must be taken account of when creatig queries.
+SELECT CASE
+    WHEN DATE_PART('dow', created_at) = 0 THEN 7
+    ELSE DATE_PART('dow', created_at)
   END AS day_of_week,
   TO_CHAR(created_at, 'Day') AS day_name,
   COUNT(*) AS total_users
 FROM users
 GROUP BY
-  day_of_week, day_name
+  day_of_week,
+  day_name
 ORDER BY
   day_of_week;
+
+--! GROUP BY with HAVING
+-------------------------------------------------------------------
+-- WARMUPS & REFERENCE
+-------------------------------------------------------------------
+-- 1. Group by using a HAVING filter:
+--    Find states that have 10 or more orders:
+--    SELECT ship_state, COUNT(*)
+--    FROM orders 
+--    GROUP BY ship_state 
+--    HAVING COUNT(*) >= 10;
+SELECT ship_state,
+  COUNT(*)
+FROM orders
+GROUP BY
+  ship_state
+HAVING
+  COUNT(*) >= 10;
+
+--------------------------------------------------------
+-- EXERCISES: Answer using the techniques FROM above.
+-- These use the jeopardy table in the game_shows database.
+-- Remember to choose the game_shows database (or specify it in SQL Server)
+--------------------------------------------------------
+-- 1. Find the combined value of all questions for each air_date.
+SELECT air_date,
+  SUM(value) AS total_value
+FROM jeopardy
+GROUP BY
+  air_date;
+
+-- 2. Add a HAVING clause to the last query to find the dates 
+--    when all the questions had a combined value < 10,000
+SELECT air_date,
+  SUM(value) AS total_value
+FROM jeopardy
+GROUP BY
+  air_date
+HAVING
+  SUM(value) < 10000;
+
+-- 3. Find the value of the highest-value question for each show_number.
+SELECT show_number,
+  MAX(value) AS highest_value
+FROM jeopardy
+GROUP BY
+  show_number;
+
+-- 4. Which shows had a question worth more than $2000?
+SELECT show_number,
+  MAX(value) AS highest_value
+FROM jeopardy
+GROUP BY
+  show_number
+HAVING
+  MAX(value) > 2000;
+
+----------------------------------------
+-- EXTRA CREDIT: If you finish early.
+----------------------------------------
+--    To get the number of characters in a string:
+--    In PostgreSQL: SELECT LENGTH(question) FROM jeopardy;
+--    In SQL Server: SELECT LEN(question) FROM game_shows.dbo.jeopardy;
+-- 1. Display the air_date and "average" question length (number of characters)
+--    ordered FROM longest (ON top) to shortest.
+SELECT air_date,
+  AVG(LENGTH(question)) AS avg_question_length
+FROM jeopardy
+GROUP BY
+  air_date
+ORDER BY
+  avg_question_length DESC;
+
+--! Lesson (DAY 3)
