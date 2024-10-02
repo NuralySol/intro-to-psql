@@ -1337,3 +1337,13 @@ SELECT SUBSTRING(email, CHARINDEX ('@', email) + 1, 255) as email_domain,
 FROM users
 GROUP BY
   SUBSTRING(email, CHARINDEX ('@', email) + 1, 255);
+  --! Views
+
+-- 1. There's another view that gets the total each user has spent. 
+--    Find that view and query it to see what you get.
+SELECT * FROM total_spent_per_user_view;
+
+
+-- 2. Filter that view to see only users with a gmail address.
+SELECT * FROM total_spent_per_user_view
+WHERE email LIKE '%@gmail.com';
