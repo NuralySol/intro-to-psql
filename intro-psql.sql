@@ -1337,13 +1337,90 @@ SELECT SUBSTRING(email, CHARINDEX ('@', email) + 1, 255) as email_domain,
 FROM users
 GROUP BY
   SUBSTRING(email, CHARINDEX ('@', email) + 1, 255);
-  --! Views
 
+--! Views
 -- 1. There's another view that gets the total each user has spent. 
 --    Find that view and query it to see what you get.
-SELECT * FROM total_spent_per_user_view;
-
+SELECT *
+FROM total_spent_per_user_view;
 
 -- 2. Filter that view to see only users with a gmail address.
-SELECT * FROM total_spent_per_user_view
+SELECT *
+FROM total_spent_per_user_view
 WHERE email LIKE '%@gmail.com';
+
+--! User-Defined Functions
+-- 1. Use a Scalar-Valued Function (returns a single value) by itself:
+--    PostgreSQL:
+SELECT fn_get_user_total_spent (99);
+
+SELECT fn_get_user_total_spent (50);
+
+--    SQL Server: 
+SELECT dbo.fn_get_user_total_spent (99);
+
+SELECT dbo.fn_get_user_total_spent (50);
+
+-- 2. Use a Scalar-Valued Function in a SELECT:
+--PostgreSQL:
+SELECT fn_get_highest_priced_product ();
+
+SELECT *
+FROM line_items
+WHERE price = fn_get_highest_priced_product ();
+
+--    SQL Server: 
+--    SELECT dbo.fn_get_highest_priced_product();
+--    SELECT * FROM line_items
+--    WHERE price = dbo.fn_get_highest_priced_product();
+-- 3. Use a Table-Valued Function (returns a table):
+-- This function returns a table, so query it like a table.
+SELECT *
+FROM fn_get_user_totals (99);
+
+SELECT *
+FROM fn_get_user_totals (50);
+
+--! Stored Procedures
+/******************************************************/
+-- PostgreSQL
+/******************************************************/
+-- Stored Procedures work differently in PostgreSQL than they do in SQL Server.
+-- In PostgreSQL you probably want to use a function instead of a stored procedure (unless you’re managing transactions).
+/******************************************************/
+-- SQL Server
+/******************************************************/
+-- 1. Using a SQL Server System Stored Procedure:
+--    EXEC sp_help users; -- users refers to our users table
+--    EXEC sp_help orders; -- users refers to our orders table
+--    EXEC sp_server_info;
+-- 2. Call a Stored Procedure that does not have any variables 
+--    (both ways of calling it work the same):
+--    EXEC spUsers_GetAll;
+--    spUsers_GetAll;
+-- 3. Call a Stored Procedure with One Variable:
+--    EXEC spUsers_GetByName @user_name = 'Elma%';
+--    EXEC spUsers_GetByName @user_name = 'Jay%';
+--    EXEC spUsers_GetByName @user_name = '';
+-- 4. Call a Stored Procedure with Multiple Variables:
+--    If you have multiple variables you separate them with a comma:
+--    EXEC spName @var1 = value1, @var2 = value2;
+--    EXEC spUsers_Total_In_Date_Range @start_date = '2019-01-01', @end_date = '2020-12-31';
+-- Self Join
+-- 1. Start by seeing the employee table:
+SELECT *
+FROM employees;
+
+-- 2. When we're done, we want to see 2 columns: 
+--    one with the employee name and one with their manager's name
+--    To get started... use 2 different table aliases to JOIN ON the 2 columns:
+SELECT *
+FROM employees e
+  JOIN employees m ON e.manager_id = m.emp_id;
+
+-- 3. Show only the 2 columns of info we want
+--    And add column aliases to make the result set understandable:
+SELECT e.emp_name AS employee,
+  m.emp_name AS manager
+FROM employees e
+  JOIN employees m ON e.manager_id = m.emp_id;
