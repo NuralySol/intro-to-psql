@@ -1,6 +1,6 @@
 //! A custom linter and formating to enforce the rules of the psql dialect in the sql language 
 //! Added a custom npm package please see the package.json file for all npm's
-
+//! no import and export statement using the older style with variable declarations
 
 const fs = require('fs');
 const path = require('path');

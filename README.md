@@ -5,13 +5,13 @@ This is an intro to psql class, and the file intro-psql.sql is a collection of q
 **PostgreSQL** (often called psql when referring to its command-line interface) is a powerful, open-source relational database management system (RDBMS) that
 extends the SQL language with many features, including:
 
-•	Support for complex queries.
-•	Full ACID compliance (Atomicity, Consistency, Isolation, Durability).
-•	Extensive support for transactions.
-•	Advanced indexing techniques (B-tree, Hash, GIN, GiST, etc.).
-•	Support for JSON and JSONB for handling semi-structured data.
-•	Extensions for full-text search, geospatial data, and more.
-•	Multi-version concurrency control (MVCC) for handling simultaneous transactions.
+• Support for complex queries.
+• Full ACID compliance (Atomicity, Consistency, Isolation, Durability).
+• Extensive support for transactions.
+• Advanced indexing techniques (B-tree, Hash, GIN, GiST, etc.).
+• Support for JSON and JSONB for handling semi-structured data.
+• Extensions for full-text search, geospatial data, and more.
+• Multi-version concurrency control (MVCC) for handling simultaneous transactions.
 
 ## PSQL documentation
 
@@ -45,3 +45,18 @@ extends the SQL language with many features, including:
 | 6         | `DISTINCT`     | Removes duplicate rows from the result set.                              |
 | 7         | `ORDER BY`     | Sorts the result set based on specified columns.                         |
 | 8         | `LIMIT/OFFSET` | Limits the number of rows returned and skips a specified number of rows. |
+
+## Types of subqueries (PSQL)
+
+| **Type**                  | **Description**                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| **Scalar Subquery**       | Returns a single value (one row, one column).                                          |
+| **Column Subquery**       | Returns a single column of values.                                                     |
+| **Row Subquery**          | Returns a single row with multiple columns.                                            |
+| **Table Subquery**        | Used in the `FROM` clause, acts as a temporary table.                                  |
+| **Correlated Subquery**   | References columns from the outer query and is re-evaluated for each row.              |
+| **Uncorrelated Subquery** | Does not reference outer query columns and is evaluated once.                          |
+| **EXISTS Subquery**       | Checks if any rows exist in the subquery.                                              |
+| **NOT EXISTS Subquery**   | Returns true if the subquery returns no rows.                                          |
+| **ANY/SOME Subquery**     | Compares a value to any value in a list returned by the subquery.                      |
+| **ALL Subquery**          | Ensures a value meets a condition for all values in the list returned by the subquery. |

@@ -68,7 +68,6 @@ ORDER BY
   user_id,
   ship_state;
 
-
 /* LIKE and Wildcards */
 --! 1. Find all the users with a gmail email address.
 SELECT *
@@ -896,3 +895,445 @@ ORDER BY
   avg_question_length DESC;
 
 --! Lesson (DAY 3)
+--  Subqueries
+-------------------------------------------------------------------
+-- WARMUPS & REFERENCE
+-------------------------------------------------------------------
+-- 1. Single-value subquery:
+--    SELECT * FROM line_items 
+--    WHERE price = (SELECT MAX(price) FROM products);
+SELECT *
+FROM line_items
+WHERE price = (
+    SELECT MAX(price)
+    FROM products
+  );
+
+-- 2. Multiple-value subquery:
+--    SELECT * FROM orders 
+--    WHERE user_id IN (
+--       SELECT user_id FROM users
+--       WHERE email LIKE '%@gmail.com'
+--    );
+SELECT *
+FROM orders
+WHERE user_id IN (
+    SELECT user_id
+    FROM users
+    WHERE email LIKE '%@gmail.com'
+  );
+
+-- 3. Table-value subquery:
+--    Step 1: Find the highest point value for each Jeopardy show's airdate.
+--    Remember to target the game_shows database before running these queries!
+SELECT air_date,
+  MAX(value) AS found_max_value
+FROM jeopardy
+GROUP BY
+  air_date;
+
+--    Step 2: Now we can get the actual questions with the point values we found.
+--    Join the results table above with the jeopardy table.
+--    Notice this joins ON 2 sets of columns!
+SELECT *
+FROM jeopardy j
+  JOIN (
+    SELECT air_date,
+      MAX(value) AS found_max_value
+    FROM jeopardy
+    GROUP BY
+      air_date
+  ) AS f ON j.air_date = f.air_date
+  AND value = found_max_value
+ORDER BY
+  j.air_date;
+
+--------------------------------------------------------
+-- EXERCISES: Answer using the techniques FROM above.
+--------------------------------------------------------
+-- 1. Select the products that cost more than average (use a subquery).
+SELECT *
+FROM products p
+WHERE p.price > (
+    SELECT avg(p.price)
+    FROM products p
+  );
+
+-- 2. Find all the line_items that represent orders for the lowest-priced product.
+SELECT *
+FROM line_items li
+WHERE price = (
+    SELECT min(price)
+    FROM products p
+  );
+
+-- 3. Find the oldest order made by a user with a yahoo email address.
+SELECT *
+FROM orders
+WHERE user_id IN (
+    SELECT user_id
+    FROM users
+    WHERE email ILIKE '%@yahoo.com'
+  )
+ORDER BY
+  created_at
+LIMIT
+  1;
+
+-- If you want include the user's email, you'd have to do a JOIN:
+SELECT *
+FROM orders AS o
+  JOIN users AS u ON o.user_id = u.user_id
+WHERE u.email ILIKE '%yahoo.com'
+ORDER BY
+  o.created_at
+LIMIT
+  1;
+
+-- 4. List the titles of the products that were returned in quantities greater than 4.
+SELECT title
+FROM products
+WHERE product_id IN (
+    SELECT DISTINCT
+      product_id
+    FROM line_items
+    WHERE quantity > 4
+      AND status = 'returned'
+  );
+
+--! Aggregate Window Functions
+-------------------------------------------------------------------
+-- WARMUPS & REFERENCE
+-------------------------------------------------------------------
+-- 1. Look at the employees table (note the salary column):
+--    SELECT emp_name, dept_id, salary FROM employees; 
+SELECT emp_name,
+  dept_id,
+  salary
+FROM employees;
+
+-- 2. Aggregate Functions output a single value.
+--    Here we find the total amount spent ON salary:
+--    SELECT SUM(salary) FROM employees;
+SELECT sum(salary)
+FROM employees;
+
+-- 3. We use a window function to add the aggregate function as a column,
+--    so it can be seen with the other columns of data:
+SELECT emp_name,
+  dept_id,
+  salary,
+  SUM(salary) OVER () AS total_salary
+FROM employees;
+
+-- 4. Like with aggregate functions, GROUP BY does not let us see the 
+--    the other columns of data (just the groups).
+SELECT dept_id,
+  AVG(salary) AS avg_salary_by_dept
+FROM employees
+GROUP BY
+  dept_id;
+
+-- 5. We can again use a window function (this time with PARTITION BY)
+--    to show a aggregate function (per group) with the other columns of data:
+SELECT emp_name,
+  dept_id,
+  salary,
+  AVG(salary) OVER (
+    PARTITION BY
+      dept_id
+  ) AS avg_salary_by_dept
+FROM employees;
+
+-- 6. Window functions cannot be used in WHERE. 
+--!   The query below will give an error telling you that:
+SELECT emp_name,
+  dept_id,
+  salary,
+  AVG(salary) OVER (
+    PARTITION BY
+      dept_id
+  ) AS avg_salary_by_dept
+FROM employees
+WHERE AVG(salary) OVER (
+    PARTITION BY
+      dept_id
+  ) > 100000;
+
+-- 7. Putting the window function into a subquery lets us use WHERE:
+SELECT *
+FROM (
+    SELECT emp_name,
+      dept_id,
+      salary,
+      AVG(salary) OVER (
+        PARTITION BY
+          dept_id
+      ) AS avg_salary_by_dept
+    FROM employees
+  ) as w
+WHERE avg_salary_by_dept > 100000;
+
+--------------------------------------------------------
+--! EXERCISES: Answer using the techniques FROM above.
+--------------------------------------------------------
+--    In subqueries we saw how to find jeopardy questions   
+--    with the highest point value. That required a JOIN, 
+--    but NOW we can do it more easily with window functions.
+--    To review, below is how we found highest point value for each Jeopardy show's airdate.
+--    Remember to target the game_shows database before running these queries!
+SELECT air_date,
+  MAX(value) AS found_max_value
+FROM jeopardy
+GROUP BY
+  air_date
+ORDER BY
+  air_date;
+
+--    Step 1: Use a window function to add a column to the jeopardy table for 
+--    the MAX(value) for each air_date:
+SELECT air_date,
+  value,
+  MAX(value) OVER (
+    PARTITION BY
+      air_date
+  ) AS max_value
+FROM jeopardy;
+
+--    Step 2: Only show rows WHERE the value equals the max value added
+--    by the window function. NOTE: You'll have to put the query FROM step 1
+--    into a subquery so you can use WHERE to find those matches.
+WITH
+  max_value_per_air_date AS (
+    SELECT air_date,
+      value,
+      MAX(value) OVER (
+        PARTITION BY
+          air_date
+      ) AS max_value
+    FROM jeopardy
+  )
+SELECT air_date,
+  value
+FROM max_value_per_air_date
+WHERE value = max_value
+ORDER BY
+  air_date;
+
+--! CASE
+-- 1. Write a conditional that will categorize each order as
+--    'West Coast' (if it was shipped to CA, OR, or WA) or 'Other'
+-- Works in both PostgreSQL and SQL Server:
+SELECT ship_state,
+  CASE
+    WHEN ship_state IN ('CA', 'OR', 'WA') THEN 'West Coast'
+    ELSE 'Other'
+  END
+FROM orders;
+
+-- Works in SQL Server Only:
+SELECT ship_state,
+  IIF (
+    ship_state IN ('CA', 'OR', 'WA'),
+    'West Coast',
+    'Other'
+  )
+FROM orders;
+
+-- 2. Modify the last query with a GROUP BY statement, to find
+--    the number of orders shipped to West Coast states vs Others.
+-- Works in PostgreSQL Only: We can use an alias to make it easier to read (and much cleaner code)
+SELECT CASE
+    WHEN ship_state IN ('CA', 'OR', 'WA') THEN 'West Coast'
+    ELSE 'Other'
+  END AS coast,
+  COUNT(*)
+FROM orders
+GROUP BY
+  coast;
+
+-- Works in both PostgreSQL and SQL Server:
+SELECT CASE
+    WHEN (ship_state IN ('CA', 'OR', 'WA')) THEN 'West Coast'
+    ELSE 'Other'
+  END,
+  COUNT(*)
+FROM orders
+GROUP BY
+  CASE
+    WHEN (ship_state IN ('CA', 'OR', 'WA')) THEN 'West Coast'
+    ELSE 'Other'
+  END;
+
+-- Works in SQL Server Only:
+SELECT IIF (
+    ship_state IN ('CA', 'OR', 'WA'),
+    'West Coast',
+    'Other'
+  ),
+  COUNT(*)
+FROM orders
+GROUP BY
+  IIF (
+    ship_state IN ('CA', 'OR', 'WA'),
+    'West Coast',
+    'Other'
+  );
+
+-- 3. Write a conditional to divide users into 3 groups, based ON their created_at: 
+--    early for accounts created in 2019 (the entire year) or prior
+--    middle for accounts created in 2020 (the entire year)
+--    late for accounts created in 2021 or later
+-- PostgreSQL:
+SELECT CASE
+    WHEN DATE_PART('year', created_at) <= '2019' THEN 'early'
+    WHEN DATE_PART('year', created_at) = '2020' THEN 'middle'
+    ELSE 'late'
+  END AS user_type
+FROM users;
+
+-- SQL Server: 
+SELECT CASE
+    WHEN DATEPART (year, created_at) <= '2019' THEN 'early'
+    WHEN DATEPART (year, created_at) = '2020' THEN 'middle'
+    ELSE 'late'
+  END AS user_type
+FROM users;
+
+-- 4. We want to count the number of orders made by each group in the query above.
+--    The users table doesn't have order info, so the first step is to 
+--    modify the last query and JOIN in the orders table.
+--    You will not see the newly joined data because we're only showing the CASE column,
+--    but you'll need it the step below when we group the data.
+--    NOTE: Because created_at exists in both tables, you'll need to
+--    prefix the table name or alias (example: users.created_at)
+-- PostgreSQL:
+SELECT CASE
+    WHEN DATE_PART('year', u.created_at) <= '2019' THEN 'early'
+    WHEN DATE_PART('year', u.created_at) = '2020' THEN 'middle'
+    ELSE 'late'
+  END AS user_type
+FROM users AS u
+  JOIN orders AS o ON u.user_id = o.user_id;
+
+-- SQL Server: 
+SELECT CASE
+    WHEN DATEPART (year, u.created_at) <= '2019' THEN 'early'
+    WHEN DATEPART (year, u.created_at) = '2020' THEN 'middle'
+    ELSE 'late'
+  END AS user_type
+FROM users AS u
+  JOIN orders AS o ON u.user_id = o.user_id;
+
+-- 5. Modify the query above, adding a GROUP BY to find which 
+--    group of users made more orders: early, middle, or late.
+-- PostgreSQL:
+SELECT CASE
+    WHEN DATE_PART('year', u.created_at) <= '2019' THEN 'early'
+    WHEN DATE_PART('year', u.created_at) = '2020' THEN 'middle'
+    ELSE 'late'
+  END AS user_type,
+  COUNT(*)
+FROM users AS u
+  JOIN orders AS o ON u.user_id = o.user_id
+GROUP BY
+  user_type;
+
+-- SQL Server: 
+SELECT CASE
+    WHEN DATEPART (year, u.created_at) <= '2019' THEN 'early'
+    WHEN DATEPART (year, u.created_at) = '2020' THEN 'middle'
+    ELSE 'late'
+  END AS user_type,
+  COUNT(*)
+FROM users AS u
+  JOIN orders AS o ON u.user_id = o.user_id
+GROUP BY
+  CASE
+    WHEN DATEPART (year, u.created_at) <= '2019' THEN 'early'
+    WHEN DATEPART (year, u.created_at) = '2020' THEN 'middle'
+    ELSE 'late'
+  END;
+
+----------------------------------------
+-- EXTRA CREDIT: If you finish early.
+----------------------------------------
+-- 1. Get the number of orders ON weekdays or weekends (per state they were shipped to).
+--    Reminder for PostgreSQL: The day of week is numbered Sunday as 0, Saturday as 6.
+--    Reminder for SQL Server: The day of week is numbered Sunday as 1, Saturday as 7.
+-- PostgreSQL:
+SELECT ship_state,
+  CASE
+    WHEN DATE_PART('dow', created_at) IN (0, 6) THEN 'weekend'
+    ELSE 'weekday'
+  END AS day_type,
+  COUNT(*)
+FROM orders
+GROUP BY
+  ship_state,
+  day_type
+ORDER BY
+  ship_state;
+
+-- SQL Server: One approach using IIF
+SELECT ship_state,
+  IIF (
+    DATEPART (dw, created_at) IN (1, 7),
+    'weekend',
+    'weekday'
+  ) AS day_type,
+  COUNT(*)
+FROM orders
+GROUP BY
+  ship_state,
+  IIF (
+    DATEPART (dw, created_at) IN (1, 7),
+    'weekend',
+    'weekday'
+  )
+ORDER BY
+  ship_state;
+
+-- SQL Server: Another approach using CASE
+SELECT ship_state,
+  CASE
+    WHEN DATEPART (dw, created_at) IN (1, 7) THEN 'weekend'
+    ELSE 'weekday'
+  END AS day_type,
+  COUNT(*)
+FROM orders
+GROUP BY
+  ship_state,
+  CASE
+    WHEN DATEPART (dw, created_at) IN (1, 7) THEN 'weekend'
+    ELSE 'weekday'
+  END
+ORDER BY
+  ship_state;
+
+--! String Functions
+-- 1. Create a list of the unique email domain names (the gmail.com, yahoo.com part) for all users.
+-- PostgreSQL
+SELECT DISTINCT
+  SPLIT_PART(email, '@', 2) as email_domain
+FROM users;
+
+-- SQL SERVER
+SELECT DISTINCT
+  SUBSTRING(email, CHARINDEX ('@', email) + 1, 255) as email_domain
+FROM users;
+
+-- 2. How many users have each email domain name?
+-- PostgreSQL
+SELECT SPLIT_PART(email, '@', 2) as email_domain,
+  COUNT(*)
+FROM users
+GROUP BY
+  email_domain;
+
+-- SQL SERVER
+SELECT SUBSTRING(email, CHARINDEX ('@', email) + 1, 255) as email_domain,
+  COUNT(*)
+FROM users
+GROUP BY
+  SUBSTRING(email, CHARINDEX ('@', email) + 1, 255);
